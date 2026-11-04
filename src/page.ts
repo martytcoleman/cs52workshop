@@ -92,7 +92,7 @@ export const PAGE = /* html */ `<!doctype html>
   </div>
 
   <form id="f" autocomplete="off">
-    <div class="field"><label for="who">Name</label><input id="who" maxlength="40" placeholder="Marty" autocomplete="off" data-1p-ignore data-lpignore="true"></div>
+    <div class="field"><label for="who">Name</label><input id="who" maxlength="40" placeholder="Jeff" autocomplete="off" data-1p-ignore data-lpignore="true"></div>
     <div class="field"><label for="major">Major</label><input id="major" maxlength="60" placeholder="Computer Science" required></div>
     <button class="go" id="go" type="submit">Roast it</button>
   </form>
