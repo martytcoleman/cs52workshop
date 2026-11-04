@@ -1,0 +1,37 @@
+{
+  "name": "llm-ops-workshop",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "tsx watch --env-file-if-exists=.env src/dev.ts",
+    "start": "tsx --env-file-if-exists=.env src/dev.ts",
+    "eval": "tsx --env-file-if-exists=.env scripts/eval.ts",
+    "typecheck": "tsc",
+    "test": "tsx test/e2e.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2"
+  },
+  "dependencies": {
+    "@hono/node-server": "^2.1.6",
+    "@langfuse/client": "^6.1.0",
+    "@langfuse/otel": "^6.1.0",
+    "@langfuse/tracing": "^6.1.0",
+    "@langfuse/vercel-ai-sdk": "^6.1.0",
+    "@opentelemetry/sdk-node": "0.223.0",
+    "ai": "^7.0.159",
+    "hono": "^4.13.16",
+    "zod": "^4.6.7"
+  },
+  "type": "module",
+  "private": true,
+  "engines": {
+    "node": ">=22"
+  },
+  "overrides": {
+    "@opentelemetry/exporter-trace-otlp-http": "0.223.0",
+    "@opentelemetry/otlp-exporter-base": "0.223.0",
+    "@opentelemetry/otlp-transformer": "0.223.0"
+  }
+}
