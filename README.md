@@ -63,7 +63,11 @@ Swearing is fine. A roast should sting. These are off limits:
 - jokes about suicide or death
 - jokes about race, gender, religion, or any other group. Roast the choices people make, not who they are.
 
-The rules are written into `src/prompt.ts` and checked by both the eval and the judge. A prompt isn't a guarantee, which is why something checks the output too.
+The rules live in `src/prompt.ts`, and a prompt isn't a guarantee: in testing Gemini still dropped an F-bomb about once in 30 roasts. So there are three layers:
+
+- **Before you see it:** the app runs a word check (`src/checks.ts`) on every roast. If it finds an F-bomb or something sexual, it quietly asks the model again, up to three tries, and bleeps it if all three fail. You only pay the extra couple of seconds on a bad roast. Langfuse records `tries` on the span, so you can see when it happened.
+- **After you see it:** the LLM judge flags anything the word list can't catch, like a stereotype.
+- **Before you ship a prompt change:** `npm run eval` scores the raw model output with the same word checks, without the re-roll, so you see how well the prompt holds by itself.
 
 ## Run it yourself
 
@@ -88,6 +92,7 @@ vercel ai-gateway budgets set api-key <key-id> --amount 10 --refresh-period none
 | `src/index.ts` | The app. Runs both models in parallel inside one trace, tags everything with user and session, turns a vote into a score, and serves the board API. |
 | `src/prompt.ts` | The roast prompt and the settings both models share. Change it, then run the eval. |
 | `src/page.ts` | The page the class uses. Plain HTML and fetch, no build step. |
+| `src/checks.ts` | The word checks: F-bombs and sexual content. The app re-rolls on them; the eval scores with them. |
 | `src/board.ts` | The live board. Pulls votes and judge scores out of Langfuse and lines them up. |
 | `src/instrumentation.ts` | OpenTelemetry plus Langfuse's span processor, so every AI SDK call gets traced. |
 | `scripts/eval.ts` | The offline eval: dataset × both models, with code checks. |

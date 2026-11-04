@@ -42,6 +42,15 @@ const fb = await app.request("/api/vote", {
 });
 console.log("vote →", fb.status);
 
+// The mock swears on the first try for this major; the app should re-roll and show a clean roast.
+const sw = await app.request("/api/roast", {
+  method: "POST",
+  headers: { "content-type": "application/json" },
+  body: JSON.stringify({ major: "Swear Test", name: "test-student" }),
+});
+const swData: any = await sw.json();
+console.log("swear →", sw.status, swData.left?.tries, swData.right?.tries);
+
 const bad = await app.request("/api/roast", { method: "POST", body: "{}" , headers: { "content-type": "application/json" } });
 await new Promise((r) => setTimeout(r, 500));
 
@@ -60,6 +69,7 @@ const checks = {
   "trace marked public": otel.includes("langfuse.trace.public"),
   "vote → score ingested": scores.includes("winner") && scores.includes(data.traceId),
   "empty major → 400": bad.status === 400,
+  "swearing roast gets re-rolled": sw.status === 200 && ![swData.left?.text, swData.right?.text].some((t) => /fuck/i.test(t)) && swData.left?.tries === 2 && swData.right?.tries === 2,
 };
 console.table(checks);
 fake.close();

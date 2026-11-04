@@ -11,6 +11,7 @@ import { ROAST_PROMPT, ROAST_SETTINGS } from "./prompt.js";
 import { PAGE } from "./page.js";
 import { mockModel } from "./mock.js";
 import { BOARD_PAGE, boardData } from "./board.js";
+import { bleep, breaksRules } from "./checks.js";
 
 // ── Config ────────────────────────────────────────────────────────────────
 // The two contenders. Pick real IDs from vercel.com/ai-gateway/models.
@@ -22,6 +23,9 @@ type Arm = keyof typeof MODELS;
 
 // If a model is down, the gateway retries these in order.
 const FALLBACKS = (process.env.MODEL_FALLBACKS ?? "").split(",").filter(Boolean);
+
+// A roast that fails the word check gets re-rolled, up to this many attempts in total.
+const MAX_TRIES = 3;
 
 const langfuse = new LangfuseClient();
 const app = new Hono();
@@ -67,34 +71,45 @@ function roast(arm: Arm, major: string, name: string) {
     const started = Date.now();
     const modelId = MODELS[arm];
 
-    const result = await generateText({
-      // A plain "provider/model" string routes through the Vercel AI Gateway.
-      model: process.env.MOCK_MODELS ? mockModel(modelId) : modelId,
-      system: ROAST_PROMPT,
-      prompt: `Major: ${major}`,
-      ...ROAST_SETTINGS,
-      telemetry: { functionId: "roast" },
-      providerOptions: {
-        ...ROAST_SETTINGS.providerOptions,
-        gateway: {
-          ...(FALLBACKS.length && { models: FALLBACKS }),
-          user: name, // also shows up in the gateway's own spend reports
-          tags: [`model:${arm}`],
+    const once = async () => {
+      const result = await generateText({
+        // A plain "provider/model" string routes through the Vercel AI Gateway.
+        model: process.env.MOCK_MODELS ? mockModel(modelId) : modelId,
+        system: ROAST_PROMPT,
+        prompt: `Major: ${major}`,
+        ...ROAST_SETTINGS,
+        telemetry: { functionId: "roast" },
+        providerOptions: {
+          ...ROAST_SETTINGS.providerOptions,
+          gateway: {
+            ...(FALLBACKS.length && { models: FALLBACKS }),
+            user: name, // also shows up in the gateway's own spend reports
+            tags: [`model:${arm}`],
+          },
         },
-      },
-    });
-
-    // The gateway returns what you actually paid inline; fall back to a lookup by generation id.
-    const gw = result.providerMetadata?.gateway as { cost?: unknown; generationId?: string } | undefined;
-    const costUsd = gw?.cost != null && !Number.isNaN(Number(gw.cost)) ? Number(gw.cost) : await lookupCost(gw?.generationId);
-    span.update({ input: major, output: result.text, metadata: { arm, model: modelId, costUsd } }); // the LLM judge reads input + output
-
-    return {
-      text: result.text,
-      latencyMs: Date.now() - started,
-      tokens: (result.usage.inputTokens ?? 0) + (result.usage.outputTokens ?? 0),
-      costUsd,
+      });
+      // The gateway returns what you actually paid inline; fall back to a lookup by generation id.
+      const gw = result.providerMetadata?.gateway as { cost?: unknown; generationId?: string } | undefined;
+      const cost = gw?.cost != null && !Number.isNaN(Number(gw.cost)) ? Number(gw.cost) : await lookupCost(gw?.generationId);
+      return { text: result.text.trim(), tokens: (result.usage.inputTokens ?? 0) + (result.usage.outputTokens ?? 0), cost };
     };
+
+    // The prompt says no F-bombs and nothing sexual, but a prompt isn't a guarantee.
+    // If the word check trips, quietly ask again. Costs ~2s, only on the rare bad roast.
+    let text = "", tokens = 0, costUsd: number | null = 0, tries = 0;
+    do {
+      const r = await once();
+      tries++;
+      text = r.text;
+      tokens += r.tokens;
+      costUsd = costUsd == null || r.cost == null ? null : costUsd + r.cost;
+    } while (breaksRules(text) && tries < MAX_TRIES);
+    if (breaksRules(text)) text = bleep(text);
+
+    // The LLM judge reads input + output. `tries` > 1 means the word check caught something.
+    span.update({ input: major, output: text, metadata: { arm, model: modelId, costUsd, tries } });
+
+    return { text, latencyMs: Date.now() - started, tokens, costUsd, tries };
   });
 }
 

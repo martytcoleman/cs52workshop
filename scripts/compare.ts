@@ -3,11 +3,11 @@
 //   npx tsx --env-file=.env scripts/compare.ts spacexai/grok-4.7 google/gemini-3.8-flash
 import { generateText } from "ai";
 import { ROAST_PROMPT, ROAST_SETTINGS } from "../src/prompt.js";
+import { breaksRules } from "../src/checks.js";
 
 (globalThis as any).AI_SDK_LOG_WARNINGS = false;
 const models = process.argv.slice(2);
-const majors = ["Computer Science", "Economics", "Government", "Philosophy", "Engineering", "Biology", "Art History", "Underwater Basket Weaving"];
-const sexual = /\b(sex\w*|suck(s|ing)? off|blow ?jobs?|horny|dick|cock|cum|porn\w*|hook ?ups?|orgasm\w*|nudes?|jerk(s|ing|ed)? off|circle[- ]?jerk\w*)\b/i;
+const majors = process.env.MAJORS ? process.env.MAJORS.split("|") : ["Computer Science", "Economics", "Government", "Philosophy", "Engineering", "Biology", "Art History", "Underwater Basket Weaving"];
 
 for (const model of models) {
   const rs = await Promise.all(
@@ -23,7 +23,7 @@ for (const model of models) {
     }),
   );
   const ms = rs.map((r) => r.ms).sort((a, b) => a - b);
-  const breaks = rs.filter((r) => /f+u+c+k/i.test(r.text) || sexual.test(r.text)).length;
+  const breaks = rs.filter((r) => breaksRules(r.text)).length;
   const long = rs.filter((r) => r.text.split(/\s+/).length > 50).length;
   const cut = rs.filter((r) => r.finish !== "stop").length;
   const avg = rs.reduce((a, r) => a + r.cost, 0) / rs.length;

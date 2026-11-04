@@ -84,7 +84,7 @@ export const PAGE = /* html */ `<!doctype html>
   }
 </style></head>
 <body><main>
-  <header><span>CS52 &mdash; LLM ops <span class="by">by Marty and Timur</span></span><a class="r" href="/board">Live board &rarr;</a></header>
+  <header><span>CS52 &mdash; LLM ops <span class="by">by Marty and Timur</span></span><a class="r" href="/board?since=2026-11-06T14:00-05:00">Live board &rarr;</a></header>
   <h1>Roast my<br><em>major</em></h1>
   <div class="lede">
     <p>Two models roast the same major. You don't know which wrote which. Vote, then see who it was, how long it took, and what it cost.</p>
@@ -100,8 +100,20 @@ export const PAGE = /* html */ `<!doctype html>
     <button class="chip" type="button">Computer Science</button>
     <button class="chip" type="button">Economics</button>
     <button class="chip" type="button">Government</button>
+    <button class="chip" type="button">Engineering Sciences</button>
+    <button class="chip" type="button">Quantitative Social Science</button>
+    <button class="chip" type="button">Neuroscience</button>
+    <button class="chip" type="button">Pre-med</button>
+    <button class="chip" type="button">Psychology</button>
+    <button class="chip" type="button">Cognitive Science</button>
+    <button class="chip" type="button">Mathematics</button>
+    <button class="chip" type="button">Environmental Studies</button>
+    <button class="chip" type="button">Earth Sciences</button>
+    <button class="chip" type="button">History</button>
+    <button class="chip" type="button">English</button>
     <button class="chip" type="button">Philosophy</button>
-    <button class="chip" type="button">Engineering</button>
+    <button class="chip" type="button">Film and Media Studies</button>
+    <button class="chip" type="button">Art History</button>
     <button class="chip" type="button">Undecided</button>
   </div>
   <div class="err" id="err" role="alert"></div>
@@ -168,7 +180,7 @@ export const PAGE = /* html */ `<!doctype html>
     const wrap = el("div", null, "wrap"); wrap.appendChild(table);
     $("reveal").replaceChildren(wrap);
     if (battle.traceUrl) { const a = el("a", "Open your trace in Langfuse \u2192", "trace"); a.href = battle.traceUrl; a.target = "_blank"; a.rel = "noopener"; $("reveal").appendChild(a); }
-    const b = el("a", "See the whole class on the live board \u2192", "trace"); b.href = "/board"; b.style.marginLeft = "24px"; $("reveal").appendChild(b);
+    const b = el("a", "See the whole class on the live board \u2192", "trace"); b.href = "/board?since=2026-11-06T14:00-05:00"; /* class starts Fri Nov 6, 2 PM Eastern */ b.style.marginLeft = "24px"; $("reveal").appendChild(b);
   }
   document.querySelectorAll(".pick").forEach((b) => b.onclick = () => vote(b.dataset.side));
   $("tie").onclick = () => vote("tie");
